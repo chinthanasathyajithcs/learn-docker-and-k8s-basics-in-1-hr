@@ -1,0 +1,22 @@
+{
+  "name": "K8s Lab",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "minikube": "none"
+    }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "4gb" },
+  "postCreateCommand": "bash scripts/install-tools.sh",
+  "postStartCommand": "bash scripts/cluster-up.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "redhat.vscode-yaml"
+      ]
+    }
+  },
+  "forwardPorts": [8080, 8081]
+}

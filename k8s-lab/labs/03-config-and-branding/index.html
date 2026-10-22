@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kubernetes Lab</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #fff; color: #111;
+           display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+    .logos { display: flex; gap: 48px; align-items: center; margin-bottom: 32px; }
+    .logos img { height: 64px; }
+    h1 { font-weight: 300; margin: 0 0 8px; }
+    p { color: #555; }
+    @media (prefers-color-scheme: dark) { body { background: #111; color: #eee; } p { color: #aaa; } }
+  </style>
+</head>
+<body>
+  <div class="logos">
+    <img src="/logos/ifs.png" alt="IFS" onerror="this.replaceWith(document.createTextNode('IFS'))">
+    <img src="/logos/nsbm.png" alt="NSBM" onerror="this.replaceWith(document.createTextNode('NSBM'))">
+  </div>
+  <h1>Hello from your Kubernetes cluster</h1>
+  <p>Served by nginx, configured entirely with ConfigMaps.</p>
+</body>
+</html>

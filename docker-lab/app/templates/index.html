@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IFS Work Order API – Demo</title>
+  <link rel="icon" type="image/png" href="/static/images/nsbm-favicon.png" />
+  <style>
+    /* Force light mode */
+    :root {
+      color-scheme: light;
+      --bg: #ffffff;
+      --text: #111111;
+      --card-bg: #f6f8fa;
+      --border: #e5e5e5;
+    }
+  
+    body {
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+  
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+  
+    header img { height: 100px; }
+  
+    main {
+      padding: 24px;
+      max-width: 880px;
+      margin: 0 auto;
+    }
+  
+    code, pre {
+      background: var(--card-bg);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+  
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 16px;
+      background: var(--bg);
+    }
+  
+    .muted {
+      color: #555;
+      font-size: 0.95rem;
+    }
+  
+    a {
+      color: #5c6ac4;
+      text-decoration: none;
+    }
+
+    button {
+      background: #111111;
+      color: #ffffff;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font: inherit;
+      cursor: pointer;
+      width: fit-content;
+    }
+
+    form {
+      display: grid;
+      gap: 12px;
+      max-width: 420px;
+    }
+
+    label {
+      display: grid;
+      gap: 4px;
+      font-size: 0.95rem;
+    }
+
+    input {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font: inherit;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th { background: var(--card-bg); }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 16px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--card-bg);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    
+  </style>
+</head>
+<body>
+  <header>
+    <img src="/static/images/ifs-logo.png" alt="IFS logo" />
+    <h2> This is the IFS Work Order API – Classroom Demo for NSBM </h2>
+  </header>
+  <main>
+    <p class="muted">This demo mirrors an IFS-style microservice: API + Postgres + RabbitMQ, with ELK (Elasticsearch, Logstash, Kibana) for logs. Containerized with Docker.</p>
+
+    <div class="card">
+      <h3>Quick Links</h3>
+      <ul>
+        <li>Health: <code>/healthz</code></li>
+        <li>Create Work Order (POST): <code>/workorders</code></li>
+        <li>List Work Orders (GET): <code>/workorders</code></li>
+        <li>RabbitMQ UI: <a href="http://localhost:15672" target="_blank" rel="noreferrer">http://localhost:15672</a></li>
+        <li>Kibana: <a href="http://localhost:5601" target="_blank" rel="noreferrer">http://localhost:5601</a> (data view <code>nsbm-logs-*</code>)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Try It</h3>
+      <p>Example command:</p>
+      <pre>curl -X POST http://localhost:9000/workorders -H "Content-Type: application/json" -d '{"id":1001,"title":"Replace pump seal","status":"NEW"}'</pre>
+      <p class="muted">The API creates the RabbitMQ queue <code>workorders</code> and binds it to <code>ifs.events</code> on startup. Open the RabbitMQ UI and use Get messages. No queue setup in the UI is required.</p>
+    </div>
+
+    <div class="card">
+      <h3>Submit a Work Order</h3>
+      <form id="create-form">
+        <label>ID <input id="wo-id" name="id" type="number" required /></label>
+        <label>Title <input id="wo-title" name="title" type="text" required /></label>
+        <label>Status <input id="wo-status" name="status" type="text" value="NEW" required /></label>
+        <button type="submit">Submit</button>
+        <p id="create-result" class="muted"></p>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Work Orders</h3>
+      <button id="refresh" type="button">Refresh</button>
+      <p id="orders-empty" class="muted">No work orders yet.</p>
+      <table id="orders-table" hidden>
+        <thead>
+          <tr><th>ID</th><th>Title</th><th>Status</th></tr>
+        </thead>
+        <tbody id="orders-body"></tbody>
+      </table>
+    </div>
+
+    <script>
+      const emptyEl = document.getElementById("orders-empty");
+      const tableEl = document.getElementById("orders-table");
+      const bodyEl = document.getElementById("orders-body");
+
+      async function loadOrders() {
+        const response = await fetch("/workorders");
+        const rows = await response.json();
+        bodyEl.replaceChildren();
+        if (!rows.length) {
+          emptyEl.hidden = false;
+          tableEl.hidden = true;
+          return;
+        }
+        emptyEl.hidden = true;
+        tableEl.hidden = false;
+        for (const row of rows) {
+          const tr = document.createElement("tr");
+          for (const value of [row.id, row.title, row.status]) {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.appendChild(td);
+          }
+          bodyEl.appendChild(tr);
+        }
+      }
+
+      document.getElementById("refresh").addEventListener("click", loadOrders);
+
+      document.getElementById("create-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const result = document.getElementById("create-result");
+        const body = {
+          id: Number(document.getElementById("wo-id").value),
+          title: document.getElementById("wo-title").value,
+          status: document.getElementById("wo-status").value || "NEW",
+        };
+        const response = await fetch("/workorders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!response.ok) {
+          result.textContent = "Could not save the work order.";
+          return;
+        }
+        result.textContent = "Saved work order " + body.id + ".";
+        form.reset();
+        document.getElementById("wo-status").value = "NEW";
+        loadOrders();
+      });
+
+      loadOrders();
+    </script>
+
+    <p class="muted">© IFS R&D Tech Platform — For demo use only.</p>
+  </main>
+</body>
+</html>
+
