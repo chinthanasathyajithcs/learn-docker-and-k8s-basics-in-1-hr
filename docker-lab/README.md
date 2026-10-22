@@ -41,8 +41,10 @@ helpers, connects them on a private network, and starts them in the right order.
 1. **Install Docker with Compose.**
    - Windows or Mac: install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it.
    - Linux or WSL: install [Docker Engine](https://docs.docker.com/engine/install/) and the Compose plugin.
-2. **Use Wi-Fi for the first start.** The first start downloads about 2 to 3 GB of images. Do not do this on
-   mobile data. Once the images are on your computer, later starts need no download.
+2. **Use Wi-Fi for the first start.** The first start downloads about 1.8 GB of images, plus a few Python
+   packages for the build. Do not do this on mobile data. Once the images are on your computer, later starts
+   need no download. A classmate can also give you the images as a file: see
+   [Offline setup](../README.md#offline-setup).
 3. **Have a terminal and a web browser ready.**
 
 ## Lab steps
@@ -201,8 +203,13 @@ Start them again without rebuilding:
 docker compose up -d
 ```
 
-Open <http://localhost:9000/workorders>. Order `1001` is still there, because the filing cabinet
-kept its data.
+Open <http://localhost:9000/workorders>. Order `1001` is still there. `down` deleted the containers, but the
+filing cabinet keeps its papers in a **named volume** called `pgdata` (see `volumes:` in
+`docker-compose.yml`), and the new `db` container picked it up again. See it with:
+
+```bash
+docker volume ls
+```
 
 Delete everything, including the stored data, for a clean start:
 

@@ -44,8 +44,8 @@ bash scripts/cluster-up.sh
 kubectl get nodes
 ```
 
-> **Mobile data warning:** the first start downloads about 1 GB of images. Do this on Wi-Fi, ideally
-> before the session.
+> **Mobile data warning:** the cluster and lab images are about 0.5 GB. Options A and B also download the
+> dev container image and its tools, roughly 1 GB more. Do this on Wi-Fi, ideally before the session.
 
 ## Words you need first
 

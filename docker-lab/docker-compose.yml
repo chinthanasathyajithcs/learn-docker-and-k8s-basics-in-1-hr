@@ -52,6 +52,8 @@ services:
       POSTGRES_DB: ifsdb
     ports:
       - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # named volume: work orders survive "docker compose down"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ifs -d ifsdb"]
       interval: 10s
@@ -94,3 +96,6 @@ services:
       options:
         gelf-address: "udp://host.docker.internal:12201"
         tag: "nsbm-api"
+
+volumes:
+  pgdata:
