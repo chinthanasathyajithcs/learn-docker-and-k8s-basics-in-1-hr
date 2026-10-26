@@ -2,13 +2,15 @@
 
 ## The story
 
-You run the website for a small online shop. The website is a simple page served by **nginx**, a
-web server. Customers must always be able to reach it.
+The lunch rush in the Docker lab showed the problem: one stall with one cook cannot keep up, and when the cook
+collapses, nobody reopens the stall. So Sam stops cooking and becomes the **manager**.
 
-You could start one copy by hand. But if that copy crashes at 2 AM, the shop is offline until someone wakes
-up. So you write a **Deployment**. It says, in effect: "Keep three copies of this website running, always."
+Sam opens three identical stalls and writes one instruction on a clipboard: "Keep three stalls running,
+always." In Kubernetes, that instruction is a **Deployment**. Each running copy is a **pod**, one cook at one
+stall. If a cook leaves, the Deployment brings in a new cook straight away.
 
-Each copy is a **pod**, one worker. If a worker stops, the Deployment hires a replacement straight away.
+Each stall here runs **nginx**, a small web server, so the cluster stays light. In lab 03 you put Sam's sign
+on it.
 
 ## What you will learn
 
@@ -37,22 +39,23 @@ cd labs/01-first-deployment
 
 Open `deployment.yaml` and read it. It asks for:
 
-- `replicas: 3`, meaning three pods.
-- `image: nginx:1.27`, the recipe each pod is cooked from.
+- `name: stall`, the name of the Deployment.
+- `replicas: 3`, meaning three pods: three cooks.
+- `image: nginx:1.27`, the recipe card each pod is packed from.
 - `containerPort: 80`, the door the web server listens on.
 
-### Step 2: Send the plan to the cluster
+### Step 2: Hand the clipboard to the cluster
 
 ```bash
 kubectl apply -f deployment.yaml
 ```
 
-Expected output: `deployment.apps/web created`.
+Expected output: `deployment.apps/stall created`.
 
 `kubectl apply` means "make the cluster match this file." Run it again later and nothing changes, because the
 cluster already matches.
 
-### Step 3: Watch the workers start
+### Step 3: Watch the cooks start
 
 ```bash
 kubectl get pods -o wide -w
@@ -64,9 +67,9 @@ kubectl get pods -o wide -w
 Press `Ctrl+C` to stop watching.
 
 **Question:** Which nodes did the pods land on? Why do you think Kubernetes chose those nodes?
-(Hint: Kubernetes spreads pods across the workers so one computer failing does not take the whole site down.)
+(Hint: Kubernetes spreads pods across the workers so one computer failing does not close every stall.)
 
-### Step 4: Delete a worker
+### Step 4: A cook leaves
 
 Copy the name of one pod from `kubectl get pods`, then delete it:
 
@@ -76,8 +79,8 @@ kubectl delete pod <pod-name>
 
 Run `kubectl get pods` straight away. You should see three pods again. One has a new name.
 
-**Question:** What happened, and why? The Deployment's job is to keep three pods running, so it started a
-replacement. The pod you deleted is gone for good. Only the Deployment is permanent.
+**Question:** What happened, and why? The Deployment's job is to keep three cooks working, so it brought in a
+replacement. The pod you deleted is gone for good. Only the Deployment, Sam's clipboard, is permanent.
 
 ### Step 5: Break it on purpose
 
@@ -102,8 +105,8 @@ kubectl describe pod <stuck-pod-name>
 
 Scroll to the **Events** section at the bottom. It says the image could not be found.
 
-**Question:** Did the website go down? Usually not. Kubernetes replaces pods gradually, so the old working
-pods keep serving customers while the broken one waits.
+**Question:** Did the stalls close? Usually not. Kubernetes replaces pods gradually, so the old cooks keep
+serving customers while the new one waits for a recipe card that does not exist.
 
 ### Step 6: Fix it
 
@@ -122,15 +125,15 @@ After a short wait, all three pods are `Running` and `READY 1/1`, and the broken
 bash verify.sh
 ```
 
-Expected output: `PASS: web has 3 ready replicas`.
+Expected output: `PASS: stall has 3 ready cooks`.
 
 ## Clean up
 
-Leave the Deployment running for lab 02. It needs `web`.
+Leave the Deployment running for lab 02. It needs `stall`.
 
 ## If something goes wrong
 
-- **`verify.sh` says FAIL:** run `kubectl get deploy web` and `kubectl get pods`. Look for a pod that is not
+- **`verify.sh` says FAIL:** run `kubectl get deploy stall` and `kubectl get pods`. Look for a pod that is not
   `Running`, then run `kubectl describe pod <name>` to see why.
 - **Stuck on `ContainerCreating` for minutes:** the image is still downloading. Check with
   `kubectl describe pod <name>`.

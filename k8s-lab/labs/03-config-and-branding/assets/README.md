@@ -1,10 +1,6 @@
-# Logos (instructor)
+# Logo
 
-Add the official logo files here before sharing the repo, named exactly:
+`burger.png` is the stall's logo. Step 1 of the lab pins it to the `sign-logo` ConfigMap.
 
-- `ifs.png`
-- `nsbm.png`
-
-Use the logo versions and usage rules supplied by each organisation. Keep each file well under
-1 MB (a ConfigMap is limited to 1 MB in total). If the files are missing, the page still works
-and simply shows the text names.
+To use your own logo, replace the file and keep the name. Keep it well under 1 MB, because a ConfigMap is
+limited to 1 MB in total. If the file is missing, the page still works without a logo.

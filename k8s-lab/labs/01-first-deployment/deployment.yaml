@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: web
+  name: stall
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: web
+      app: stall
   template:
     metadata:
       labels:
-        app: web
+        app: stall
     spec:
       containers:
         - name: nginx

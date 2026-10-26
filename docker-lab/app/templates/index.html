@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>IFS Work Order API – Demo</title>
-  <link rel="icon" type="image/png" href="/static/images/nsbm-favicon.png" />
+  <title>Sam's Burger Stall</title>
+  <link rel="icon" type="image/png" href="/static/images/burger.png" />
   <style>
     /* Force light mode */
     :root {
@@ -129,48 +129,47 @@
 </head>
 <body>
   <header>
-    <img src="/static/images/ifs-logo.png" alt="IFS logo" />
-    <h2> This is the IFS Work Order API – Classroom Demo for NSBM </h2>
+    <img src="/static/images/burger.png" alt="" />
+    <h2>Sam's Burger Stall</h2>
   </header>
   <main>
-    <p class="muted">This demo mirrors an IFS-style microservice: API + Postgres + RabbitMQ, with ELK (Elasticsearch, Logstash, Kibana) for logs. Containerized with Docker.</p>
+    <p class="muted">Four helpers, each in its own container: the cashier (this page, FastAPI), the filing cabinet (PostgreSQL), the bell (RabbitMQ) and the notebook. Docker Compose starts them together.</p>
 
     <div class="card">
       <h3>Quick Links</h3>
       <ul>
         <li>Health: <code>/healthz</code></li>
-        <li>Create Work Order (POST): <code>/workorders</code></li>
-        <li>List Work Orders (GET): <code>/workorders</code></li>
-        <li>RabbitMQ UI: <a href="http://localhost:15672" target="_blank" rel="noreferrer">http://localhost:15672</a></li>
-        <li>Kibana: <a href="http://localhost:5601" target="_blank" rel="noreferrer">http://localhost:5601</a> (data view <code>nsbm-logs-*</code>)</li>
+        <li>Place an order (POST): <code>/orders</code></li>
+        <li>List orders (GET): <code>/orders</code></li>
+        <li>The bell (RabbitMQ UI): <a href="http://localhost:15672" target="_blank" rel="noreferrer">http://localhost:15672</a></li>
       </ul>
     </div>
 
     <div class="card">
       <h3>Try It</h3>
       <p>Example command:</p>
-      <pre>curl -X POST http://localhost:9000/workorders -H "Content-Type: application/json" -d '{"id":1001,"title":"Replace pump seal","status":"NEW"}'</pre>
-      <p class="muted">The API creates the RabbitMQ queue <code>workorders</code> and binds it to <code>ifs.events</code> on startup. Open the RabbitMQ UI and use Get messages. No queue setup in the UI is required.</p>
+      <pre>curl -X POST http://localhost:9000/orders -H "Content-Type: application/json" -d '{"id":1001,"item":"Cheeseburger","status":"NEW"}'</pre>
+      <p class="muted">The cashier creates the RabbitMQ queue <code>orders</code> and binds it to <code>stall.events</code> on startup. Open the RabbitMQ UI and use Get messages. No queue setup in the UI is required.</p>
     </div>
 
     <div class="card">
-      <h3>Submit a Work Order</h3>
+      <h3>Place an Order</h3>
       <form id="create-form">
-        <label>ID <input id="wo-id" name="id" type="number" required /></label>
-        <label>Title <input id="wo-title" name="title" type="text" required /></label>
-        <label>Status <input id="wo-status" name="status" type="text" value="NEW" required /></label>
-        <button type="submit">Submit</button>
+        <label>Order number <input id="order-id" name="id" type="number" required /></label>
+        <label>Item <input id="order-item" name="item" type="text" required /></label>
+        <label>Status <input id="order-status" name="status" type="text" value="NEW" required /></label>
+        <button type="submit">Place order</button>
         <p id="create-result" class="muted"></p>
       </form>
     </div>
 
     <div class="card">
-      <h3>Work Orders</h3>
+      <h3>Orders</h3>
       <button id="refresh" type="button">Refresh</button>
-      <p id="orders-empty" class="muted">No work orders yet.</p>
+      <p id="orders-empty" class="muted">No orders yet.</p>
       <table id="orders-table" hidden>
         <thead>
-          <tr><th>ID</th><th>Title</th><th>Status</th></tr>
+          <tr><th>Number</th><th>Item</th><th>Status</th></tr>
         </thead>
         <tbody id="orders-body"></tbody>
       </table>
@@ -182,7 +181,7 @@
       const bodyEl = document.getElementById("orders-body");
 
       async function loadOrders() {
-        const response = await fetch("/workorders");
+        const response = await fetch("/orders");
         const rows = await response.json();
         bodyEl.replaceChildren();
         if (!rows.length) {
@@ -194,7 +193,7 @@
         tableEl.hidden = false;
         for (const row of rows) {
           const tr = document.createElement("tr");
-          for (const value of [row.id, row.title, row.status]) {
+          for (const value of [row.id, row.item, row.status]) {
             const td = document.createElement("td");
             td.textContent = value;
             tr.appendChild(td);
@@ -210,29 +209,29 @@
         const form = event.currentTarget;
         const result = document.getElementById("create-result");
         const body = {
-          id: Number(document.getElementById("wo-id").value),
-          title: document.getElementById("wo-title").value,
-          status: document.getElementById("wo-status").value || "NEW",
+          id: Number(document.getElementById("order-id").value),
+          item: document.getElementById("order-item").value,
+          status: document.getElementById("order-status").value || "NEW",
         };
-        const response = await fetch("/workorders", {
+        const response = await fetch("/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
         if (!response.ok) {
-          result.textContent = "Could not save the work order.";
+          result.textContent = "Could not save the order.";
           return;
         }
-        result.textContent = "Saved work order " + body.id + ".";
+        result.textContent = "Saved order " + body.id + ".";
         form.reset();
-        document.getElementById("wo-status").value = "NEW";
+        document.getElementById("order-status").value = "NEW";
         loadOrders();
       });
 
       loadOrders();
     </script>
 
-    <p class="muted">© IFS R&D Tech Platform — For demo use only.</p>
+    <p class="muted">A classroom app for learning Docker. For practice only.</p>
   </main>
 </body>
 </html>

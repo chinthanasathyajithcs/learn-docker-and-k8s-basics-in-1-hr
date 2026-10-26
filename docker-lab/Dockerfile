@@ -17,23 +17,23 @@ RUN python -m pip install --upgrade pip wheel setuptools \
 
 # --- Runtime stage
 FROM python:3.12-slim AS runtime
-LABEL org.opencontainers.image.title="ifs-workorder-api" \
-      org.opencontainers.image.description="IFS-style demo microservice for classroom" \
-      org.opencontainers.image.vendor="IFS" \
-      org.opencontainers.image.licenses="Proprietary"
+LABEL org.opencontainers.image.title="sams-burger-stall" \
+      org.opencontainers.image.description="Sam's burger stall: a classroom app for learning Docker" \
+      org.opencontainers.image.licenses="MIT"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    APP_NAME=ifs-workorder-api \
+    APP_NAME=cashier \
     APP_ENV=dev \
-    DB_HOST=db \
-    DB_USER=ifs \
-    DB_PASS=ifs \
-    DB_NAME=ifsdb \
-    RMQ_HOST=mq
+    DB_HOST=cabinet \
+    DB_USER=sam \
+    DB_PASS=sam \
+    DB_NAME=stall \
+    RMQ_HOST=bell
 
-# Non-root
-RUN useradd -m -u 10001 appuser
+# Non-root. The notebook folder belongs to the app user, so a new volume mounted there is writable.
+RUN useradd -m -u 10001 appuser \
+ && mkdir /notebook && chown appuser /notebook
 WORKDIR /app
 
 # Minimal runtime deps
@@ -46,7 +46,7 @@ COPY --from=builder /wheels /wheels
 COPY app/requirements.txt .
 RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt
 
-# 3) Copy application (templates + static logo included)
+# 3) Copy application (templates and static files included)
 COPY app/ /app/
 
 USER appuser
