@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: site
+  name: stall-sign
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: site
+      app: stall-sign
   template:
     metadata:
       labels:
-        app: site
+        app: stall-sign
     spec:
       containers:
         - name: nginx
@@ -25,23 +25,21 @@ spec:
           projected:
             sources:
               - configMap:
-                  name: site-html
+                  name: sign-html
               - configMap:
-                  name: site-logos
+                  name: sign-logo
                   items:
-                    - key: ifs.png
-                      path: logos/ifs.png
-                    - key: nsbm.png
-                      path: logos/nsbm.png
+                    - key: burger.png
+                      path: logos/burger.png
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: site
+  name: stall-sign
 spec:
   type: NodePort
   selector:
-    app: site
+    app: stall-sign
   ports:
     - port: 80
       targetPort: 80

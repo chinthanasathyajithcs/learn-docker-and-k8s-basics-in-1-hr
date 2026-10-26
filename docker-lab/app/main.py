@@ -7,36 +7,36 @@ from fastapi.templating import Jinja2Templates
 import psycopg2
 import pika
 
-APP_NAME = os.getenv("APP_NAME", "ifs-workorder-api")
+APP_NAME = os.getenv("APP_NAME", "cashier")
 APP_ENV  = os.getenv("APP_ENV", "dev")
-DB_HOST  = os.getenv("DB_HOST", "db")
-DB_USER  = os.getenv("DB_USER", "ifs")
-DB_PASS  = os.getenv("DB_PASS", "ifs")
-DB_NAME  = os.getenv("DB_NAME", "ifsdb")
-RMQ_HOST = os.getenv("RMQ_HOST", "mq")
+DB_HOST  = os.getenv("DB_HOST", "cabinet")
+DB_USER  = os.getenv("DB_USER", "sam")
+DB_PASS  = os.getenv("DB_PASS", "sam")
+DB_NAME  = os.getenv("DB_NAME", "stall")
+RMQ_HOST = os.getenv("RMQ_HOST", "bell")
 
-app = FastAPI(title="IFS Work Order API", version="0.1.0")
+app = FastAPI(title="Sam's Burger Stall", version="0.1.0")
 
-# Serve static files (logo) and templates
+# Serve static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-EXCHANGE = "ifs.events"
-QUEUE = "workorders"
+EXCHANGE = "stall.events"
+QUEUE = "orders"
 
-class WorkOrder(BaseModel):
+class Order(BaseModel):
     id: int
-    title: str
+    item: str
     status: str = "NEW"
 
 def db_connect():
     return psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASS)
 
-def ensure_work_orders_table(cur):
-    cur.execute("CREATE TABLE IF NOT EXISTS work_orders (id INT PRIMARY KEY, title TEXT, status TEXT)")
+def ensure_orders_table(cur):
+    cur.execute("CREATE TABLE IF NOT EXISTS orders (id INT PRIMARY KEY, item TEXT, status TEXT)")
 
 def ensure_messaging():
-    """Declare the fanout exchange, the workorders queue, and the binding."""
+    """Declare the fanout exchange, the orders queue, and the binding."""
     mq_conn = pika.BlockingConnection(pika.ConnectionParameters(host=RMQ_HOST))
     ch = mq_conn.channel()
     ch.exchange_declare(exchange=EXCHANGE, exchange_type="fanout", durable=True)
@@ -57,36 +57,36 @@ def index(request: Request):
 def healthz():
     return {"status": "ok", "service": APP_NAME, "env": APP_ENV}
 
-@app.get("/workorders")
-def list_workorders():
+@app.get("/orders")
+def list_orders():
     conn = db_connect()
     cur = conn.cursor()
-    ensure_work_orders_table(cur)
+    ensure_orders_table(cur)
     conn.commit()
-    cur.execute("SELECT id, title, status FROM work_orders ORDER BY id")
-    rows = [{"id": row[0], "title": row[1], "status": row[2]} for row in cur.fetchall()]
+    cur.execute("SELECT id, item, status FROM orders ORDER BY id")
+    rows = [{"id": row[0], "item": row[1], "status": row[2]} for row in cur.fetchall()]
     cur.close()
     conn.close()
     return rows
 
-@app.post("/workorders")
-def create_workorder(wo: WorkOrder):
-    # Store minimal data in Postgres
+@app.post("/orders")
+def create_order(order: Order):
+    # File the order in the cabinet (Postgres)
     conn = db_connect()
     cur = conn.cursor()
-    ensure_work_orders_table(cur)
+    ensure_orders_table(cur)
     cur.execute(
-        "INSERT INTO work_orders (id, title, status) VALUES (%s, %s, %s) "
-        "ON CONFLICT (id) DO UPDATE SET title=EXCLUDED.title, status=EXCLUDED.status",
-        (wo.id, wo.title, wo.status),
+        "INSERT INTO orders (id, item, status) VALUES (%s, %s, %s) "
+        "ON CONFLICT (id) DO UPDATE SET item=EXCLUDED.item, status=EXCLUDED.status",
+        (order.id, order.item, order.status),
     )
     conn.commit()
     cur.close()
     conn.close()
 
-    # Publish event to RabbitMQ. The queue is declared first, so the message is kept.
+    # Ring the bell (RabbitMQ). The queue is declared first, so the message is kept.
     mq_conn, ch = ensure_messaging()
-    ch.basic_publish(exchange=EXCHANGE, routing_key="", body=f"wo.created:{wo.id}")
+    ch.basic_publish(exchange=EXCHANGE, routing_key="", body=f"order.created:{order.id}")
     mq_conn.close()
 
-    return {"ok": True, "id": wo.id}
+    return {"ok": True, "id": order.id}

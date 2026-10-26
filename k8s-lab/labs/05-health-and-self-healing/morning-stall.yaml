@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: healthy
+  name: morning-stall
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: healthy
+      app: morning-stall
   template:
     metadata:
       labels:
-        app: healthy
+        app: morning-stall
     spec:
       containers:
         - name: nginx
@@ -30,9 +30,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: healthy
+  name: morning-stall
 spec:
   selector:
-    app: healthy
+    app: morning-stall
   ports:
     - port: 80
